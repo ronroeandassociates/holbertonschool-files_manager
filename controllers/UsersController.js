@@ -1,34 +1,50 @@
-import dbClient from '../utils/db';
-
-const SHA1 = require('sha1');
-const { v4: uuidv4 } = require('uuid');
+const sha1 = require('sha1');
+const mongo = require('mongodb');
+const Redis = require('../utils/redis');
+const dbClient = require('../utils/db');
 
 class UsersController {
-  static async postNew(req, res) {
-    const id = uuidv4();
+  static postNew(req, res) {
+    (async () => {
+      const { email, password } = req.body;
 
-    if (!('email' in req.body)) {
-      return res.status(400).send({ error: 'Missing email' });
-    }
+      if (!email) {
+        return res.status(400).json({ error: 'Missing email' });
+      }
 
-    if (!('password' in req.body)) {
-      return res.status(400).send({ error: 'Missing password' });
-    }
+      if (!password) {
+        return res.status(400).json({ error: 'Missing password' });
+      }
 
-    const db = await dbClient.client.collection('users').findOne({ email: req.body.email });
-    if (db) {
-      return res.status(400).send('Already exist');
-    }
+      const user = await dbClient.db.collection('users').findOne({ email });
+      if (user) {
+        return res.status(400).json({ error: 'Already exist' });
+      }
 
-    const user = {
-      id,
-      email: req.body.email,
-      password: SHA1(req.body.password),
-    };
+      const hash = sha1(password);
+      const newUser = await dbClient.db
+        .collection('users')
+        .insertOne({ email, password: hash });
+      return res.status(201).send({ id: newUser.insertedId, email });
+    })();
+  }
 
-    await dbClient.client.collection('users').insertOne(user);
-    return res.status(201).send({ id, email: req.body.email });
+  static getMe(req, res) {
+    (async () => {
+      const token = req.headers['x-token'];
+      const user = await Redis.get(`auth_${token}`);
+      const userID = new mongo.ObjectID(user);
+      const userData = await dbClient.db
+        .collection('users')
+        .findOne({ _id: userID });
+
+      if (!userData) {
+        return res.status(401).send({ error: 'Unauthorized' });
+      }
+
+      return res.status(200).send({ id: userData._id, email: userData.email });
+    })();
   }
 }
 
-export default UsersController;
+module.exports = UsersController;
