@@ -13,7 +13,7 @@ router.get('/stats', (req, res) => {
 });
 
 router.post('/users', (req, res) => {
-    UsersController.postNew(req, res);
-  });
+  UsersController.postNew(req, res);
+});
 
 module.exports = router;
