@@ -1,12 +1,11 @@
 const redis = require('redis');
 const { promisify } = require('util');
 
-
 class RedisClient {
   constructor() {
     this.client = redis.createClient();
     this.client.on('error', (error) => {
-      console.log(error)
+      console.log(error);
     });
     this.getAsync = promisify(this.client.get).bind(this.client);
   }
@@ -30,7 +29,5 @@ class RedisClient {
   }
 
 }
-
 const redisClient = new RedisClient();
-
 export default redisClient;
