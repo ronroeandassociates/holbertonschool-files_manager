@@ -1,10 +1,10 @@
 const { MongoClient } = require('mongodb');
-const config = require('./../config');
+const config = require('../config');
+
 const host = config.DB_HOST;
 const port = config.DB_PORT;
 const database = config.DB_DATABASE;
 const url = `mongodb://${host}:${port}/`;
-
 
 class DBClient {
   constructor() {
